@@ -26,8 +26,9 @@ such a token, please see [rancher-api-keys](https://rancher.com/docs/rancher/v2.
 - (optional) cluster-name: useful if you want a user defined cluster name within the Rancher platform. If this
 option is not set, a randomly generated cluster name will be assigned.
 
-- (optional) cert-verify: disables verification of the Rancher platform certificate. This is not
-recommended but can be useful for development purposes when using a self-signed certificate.
+- (optional) cert-verify: toggles verification of the Rancher platform certificate. Setting this to
+ false is not recommended but can be useful for development purposes when using a self-signed 
+ certificate.
 
 ```bash
 # Deploy the rancher-integrator charm

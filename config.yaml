@@ -12,8 +12,8 @@ options:
   cert-verify:
     default: true
     description: |
-      Disables verification of the Rancher platform certificate. This is not recommended but can be
-      useful for development purposes when using a self-signed certificate.
+      Toggles verification of the Rancher platform certificate. Setting this to false is not
+      recommended but can be useful for development purposes when using a self-signed certificate.
     type: boolean
   cluster-name:
     description: |
