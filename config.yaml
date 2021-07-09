@@ -8,7 +8,17 @@
 # Learn more about config at: https://juju.is/docs/sdk/config
 
 options:
-  thing:
-    default: 🎁
-    description: A thing used by the charm.
+  url:
+    default: rancher.maas
+    description: Port number to listen on for https.
+    type: string
+  bearer-token:
+    description: Whether to add the local cluster to rancher or not.
+    type: string
+  cert-verify:
+    default: true
+    description: Whether to add the local cluster to rancher or not.
+    type: boolean
+  cluster-name:
+    description: Hostname to reach rancher from outside the cluster.
     type: string
