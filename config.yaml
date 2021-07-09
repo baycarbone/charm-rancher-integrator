@@ -1,24 +1,22 @@
 # Copyright 2021 Ubuntu
 # See LICENSE file for licensing details.
 #
-# TEMPLATE-TODO: change this example to suit your needs.
-# If you don't need a config, you can remove the file entirely.
-# It ties in to the example _on_config_changed handler in src/charm.py
-#
-# Learn more about config at: https://juju.is/docs/sdk/config
 
 options:
   url:
-    default: rancher.maas
-    description: Port number to listen on for https.
+    description: url of the existing Rancher platform against which registration will be performed.
     type: string
   bearer-token:
-    description: Whether to add the local cluster to rancher or not.
+    description: bearer-token needed to access the Rancher api.
     type: string
   cert-verify:
     default: true
-    description: Whether to add the local cluster to rancher or not.
+    description: |
+      Disables verification of the Rancher platform certificate. This is not recommended but can be
+      useful for development purposes when using a self-signed certificate.
     type: boolean
   cluster-name:
-    description: Hostname to reach rancher from outside the cluster.
+    description: |
+      User defined cluster name to be used within the Rancher platform. If this option is not set,
+      a randomly generated cluster name will be assigned.
     type: string

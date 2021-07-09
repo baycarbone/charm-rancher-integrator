@@ -1,22 +1,17 @@
 # Copyright 2021 Ubuntu
 # See LICENSE file for licensing details.
 #
-# TEMPLATE-TODO: change this example to suit your needs.
-# If you don't need actions, you can remove the file entirely.
-# It ties in to the example _on_fortune_action handler in src/charm.py
-#
-# Learn more about actions at: https://juju.is/docs/sdk/actions
 
 register:
-  description: Returns a pithy phrase.
+  description: Registers the cluster in the configured Rancher platform.
   params:
     fail:
       description: "Fail with this message"
       type: string
       default: ""
 
-delete:
-  description: Returns a pithy phrase.
+unregister:
+  description: Unregister the cluster from the configured Rancher platform.
   params:
     fail:
       description: "Fail with this message"
