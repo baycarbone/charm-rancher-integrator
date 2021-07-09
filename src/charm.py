@@ -88,7 +88,7 @@ class RancherIntegratorCharm(CharmBase):
 
         container = self.unit.get_container("rancher-integrator")
 
-        self.cmd = "python ./rancher-integrator.py -i -d " + self.config["url"] + " " + self.config["bearer-token"].split(":")[0] + " " + self.config["bearer-token"].split(":")[1] + " register -n" + self.config["cluster-name"]
+        self.cmd = "python ./rancher-integrator.py -i -w " + self.config["url"] + " " + self.config["bearer-token"].split(":")[0] + " " + self.config["bearer-token"].split(":")[1] + " register -n" + self.config["cluster-name"]
 
         # Add intial Pebble config layer using the Pebble API
         container.add_layer("rancher-integrator", self._rancher_integrator_layer(), combine=True)
@@ -120,7 +120,7 @@ class RancherIntegratorCharm(CharmBase):
         """
         container = self.unit.get_container("rancher-integrator")
 
-        self.cmd = "python ./rancher-integrator.py -i -d " + self.config["url"] + " " + self.config["bearer-token"].split(":")[0] + " " + self.config["bearer-token"].split(":")[1] + " unregister " + self.config["cluster-name"]
+        self.cmd = "python ./rancher-integrator.py -i -w " + self.config["url"] + " " + self.config["bearer-token"].split(":")[0] + " " + self.config["bearer-token"].split(":")[1] + " unregister " + self.config["cluster-name"]
 
         # Add intial Pebble config layer using the Pebble API
         container.add_layer("rancher-integrator", self._rancher_integrator_layer(), combine=True)
