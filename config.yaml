@@ -6,17 +6,14 @@ options:
   url:
     description: url of the existing Rancher platform against which registration will be performed.
     type: string
+    default: changeme
   bearer-token:
     description: bearer-token needed to access the Rancher api.
     type: string
+    default: change:me
   cert-verify:
-    default: true
+    default: 'True'
     description: |
-      Toggles verification of the Rancher platform certificate. Setting this to false is not
+      Toggles verification of the Rancher platform certificate. Setting this to 'False' is not
       recommended but can be useful for development purposes when using a self-signed certificate.
-    type: boolean
-  cluster-name:
-    description: |
-      User defined cluster name to be used within the Rancher platform. If this option is not set,
-      a randomly generated cluster name will be assigned.
     type: string
