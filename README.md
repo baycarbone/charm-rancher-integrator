@@ -23,9 +23,6 @@ In order to execute the actions the following config options need to be set:
 - bearer-token: bearer-token needed to access the Rancher api. For more information on retrieving
 such a token, please see [rancher-api-keys](https://rancher.com/docs/rancher/v2.5/en/user-settings/api-keys/).
 
-- (optional) cluster-name: useful if you want a user defined cluster name within the Rancher platform. If this
-option is not set, a randomly generated cluster name will be assigned.
-
 - (optional) cert-verify: toggles verification of the Rancher platform certificate. Setting this to
  false is not recommended but can be useful for development purposes when using a self-signed 
  certificate.
@@ -45,6 +42,9 @@ $ watch -n1 --color juju status --color
 # Execute the registration action
 $ juju run-action rancher-integrator/0 register
 ```
+
+Note: The register action takes an optional ```name``` parameter when a user defined cluster name within the Rancher platform is desired. If this
+parameter is not set, a randomly generated cluster name will be assigned and returned to the user.
 
 ## Developing
 
