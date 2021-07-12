@@ -5,15 +5,9 @@
 register:
   description: Registers the cluster in the configured Rancher platform.
   params:
-    fail:
-      description: "Fail with this message"
+    name:
       type: string
-      default: ""
+      description: Name of the cluster being registered.
 
 unregister:
-  description: Unregister the cluster from the configured Rancher platform.
-  params:
-    fail:
-      description: "Fail with this message"
-      type: string
-      default: ""
+  description: Unregister the cluster.
