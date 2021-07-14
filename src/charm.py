@@ -83,13 +83,13 @@ class RancherIntegratorCharm(CharmBase):
         """
 
         if not self._stored.registered:
-            if not self._stored.cluster_name and 'name' in event.params:
+            if 'name' in event.params:
                 self._stored.cluster_name = event.params['name']
             container = self.unit.get_container('rancher-integrator')
             register_layer = self._generate_rancher_integrator_layer('register')
             outcome = self._apply_rancher_integrator_layer(register_layer)
 
-            if outcome['status']:
+            if outcome['status'] and outcome['reason'] != 'No change since previous request.':
                 event.log('Cluster successfuly registered, trying to fetch the import manifest...')
                 found_manifest = False
                 count = 0
@@ -104,7 +104,6 @@ class RancherIntegratorCharm(CharmBase):
                         return
                     if len(import_manifest_contents) == 1:
                         try:
-                            # import_manifest = container.pull('/blabla/i.yaml').read()
                             import_manifest = container.pull(import_manifest_contents[0].path).read()
                             self._stored.cluster_name = import_manifest_contents[0].name.split('.yaml')[0]
                         except PathError as err:
@@ -152,6 +151,8 @@ class RancherIntegratorCharm(CharmBase):
             else:
                 message = outcome['reason'].split('Err -')
                 event.fail('Unable to register cluster. Error: {}'.format(message))
+                self._stored.cluster_name = None
+                self._stored.registered = False
                 return
 
         else:
@@ -169,29 +170,32 @@ class RancherIntegratorCharm(CharmBase):
 
         """
 
-        unregister_layer = self._generate_rancher_integrator_layer('unregister')
-        outcome = self._apply_rancher_integrator_layer(unregister_layer)
+        if self._stored.registered:
+            unregister_layer = self._generate_rancher_integrator_layer('unregister')
+            outcome = self._apply_rancher_integrator_layer(unregister_layer)
 
-        if outcome['status']:
-            event.log('Successully unregistered cluster from rancher platform.')
-            if self._stored.manifest is not None:
-                # add try
-                self.kubernetes.delete(self._stored.manifest)
-                event.log('Successully removed import manifest.')
-                self._stored.manifest = None
-            event.set_results({
-                'result': 'Unregistered cluster successfully',
-                'name': self._stored.cluster_name
-            })
-            self._stored.cluster_name = None
-            self._stored.registered = False
-            # All is well, set an ActiveStatus
-            self.unit.status = ActiveStatus('Cluster is not registered.')
+            if outcome['status']:
+                event.log('Successully unregistered cluster from rancher platform.')
+                if self._stored.manifest is not None:
+                    # add try
+                    self.kubernetes.delete(self._stored.manifest)
+                    event.log('Successully removed import manifest.')
+                    self._stored.manifest = None
+                event.set_results({
+                    'result': 'Unregistered cluster successfully',
+                    'name': self._stored.cluster_name
+                })
+                self._stored.cluster_name = None
+                self._stored.registered = False
+                # All is well, set an ActiveStatus
+                self.unit.status = ActiveStatus('Cluster is not registered.')
+            else:
+                message = outcome['reason'].split('Err -')
+                # Block and inform user api connection details need to be sorted out
+                self.unit.status = BlockedStatus(message[0])
+                event.fail(message='Unable to unregister cluster. Error: {}'.format(message[0]))
         else:
-            message = outcome['reason'].split('Err -')
-            # Block and inform user api connection details need to be sorted out
-            self.unit.status = BlockedStatus(message[0])
-            event.fail(message='Unable to unregister cluster. Error: {}'.format(message[0]))
+            event.fail(message='Cluster is not registered, there is no need to unregister it.')
 
     def _generate_rancher_integrator_layer(self, command):
         """Returns a Pebble configration layer for rancher-integrator"""
@@ -233,7 +237,6 @@ class RancherIntegratorCharm(CharmBase):
 
         # Get the current config
         services = container.get_plan().to_dict().get("services", {})
-
         # Check if there are any changes to services
         if services != layer["services"]:
             # Changes were made, add the new layer
@@ -250,8 +253,10 @@ class RancherIntegratorCharm(CharmBase):
 
             if error_log:
                 return {'status': False, 'reason': error_log}
-
-        return {'status': True}
+            else:
+                return {'status': True, 'reason': 'Change applied.'}
+        else:
+            return {'status': True, 'reason': 'No change since previous request.'}
 
 
 if __name__ == "__main__":
