@@ -6,9 +6,10 @@ This charm deploys and manages the rancher-integration application capable of re
 needed unregistering) a Kubernetes cluster within an existing Rancher container management 
 platform.  
   
-To finalize the registration process, the charm will fetch the import manifest, generated as a 
-result of the cluster import process, from the Rancher platform and apply the manifest on the 
-Kubernetes cluster hosting the charm.
+As a result of the cluster import process, the Rancher platform generates an import manifest which 
+is fetched and stored by the rancher-integrator application. To finalize the registration 
+process, the sidecar charm will retrieve the import manifest and apply it on the Kubernetes 
+cluster hosting the charm.
 
 Charmhub page: https://charmhub.io/rancher-integrator  
 Documentation: https://charmhub.io/rancher-integrator/docs  
@@ -49,9 +50,19 @@ $ watch -n1 --color juju status --color
 $ juju run-action rancher-integrator/0 register
 ```
 
+### Actions
+
+**register**  
+Request the rancher-integration application to register the Kubernetes cluster, then retrieve 
+the import manifest and apply it on the Kubernetes cluster hosting the charm.
+
 Note: The register action takes an optional ```name``` parameter when a user defined cluster name 
 within the Rancher platform is desired. If this parameter is not set, a randomly generated cluster 
 name will be assigned and returned to the user.
+
+**unregister**  
+Request the rancher-integration application to unregister the Kubernetes cluster, then delete the 
+import manifest from the Kubernetes cluster hosting the charm.
 
 ## Development Setup
 
