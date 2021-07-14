@@ -47,8 +47,9 @@ $ juju trust rancher-integrator --scope=cluster
 # state and its message should inform you that the cluster is currently not registered.
 $ watch -n1 --color juju status --color
 
-# Execute the registration action
-$ juju run-action rancher-integrator/0 register
+# Execute the registration action using actions-v2 for a better UX
+export JUJU_FEATURES=actions-v2
+$ juju run rancher-integrator/0 register --format=yaml
 ```
 
 ### Actions
@@ -118,10 +119,11 @@ $ juju trust rancher-integrator --scope=cluster
 # Wait for the deployment to complete
 $ watch -n1 --color juju status --color
 
-# Execute actions e.g:
-$ juju run-action rancher-integrator/0 register
-$ juju run-action rancher-integrator/0 unregister
-$ juju run-action rancher-integrator/0 register name=<name>
+# Execute actions using actions-v2 for a better UX e.g:
+export JUJU_FEATURES=actions-v2
+$ juju run rancher-integrator/0 register --format=yaml
+$ juju run rancher-integrator/0 unregister --format=yaml
+$ juju run rancher-integrator/0 register name=<name> --format=yaml
 ```
 ### Config options
 - url: url of the existing Rancher platform against which registration will be performed.
