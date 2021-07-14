@@ -2,9 +2,9 @@
 
 ## Description
 
-This charm deploys and manages the rancher-integration application capable of registering (and if
-needed unregistering) the Kubernetes cluster hosting the charm within an existing Rancher container
- management platform.
+This charm deploys and manages the rancher-integration application capable of registering (and if 
+needed unregistering) the Kubernetes cluster hosting the charm within an existing Rancher container 
+management platform.
 
 Charmhub page: https://charmhub.io/rancher-integrator  
 Documentation: https://charmhub.io/rancher-integrator/docs  
@@ -14,8 +14,7 @@ More information regarding the rancher-interator application can be found at [ra
 
 ## Quickstart
 
-Assuming you have juju installed and bootstrapped on a Kubernetes cluster, deploy the charm and
-execute the required actions as needed (if you do not, see the next section).
+Assuming you have juju installed and bootstrapped on a Kubernetes cluster, deploy the charm and execute the required actions as needed (if you do not, see the next section).
 
 In order to execute the actions the following config options need to be set:
 - url: url of the existing Rancher platform against which registration will be performed.
@@ -24,7 +23,7 @@ In order to execute the actions the following config options need to be set:
 such a token, please see [rancher-api-keys](https://rancher.com/docs/rancher/v2.5/en/user-settings/api-keys/).
 
 - (optional) cert-verify: toggles verification of the Rancher platform certificate. Setting this to
- false is not recommended but can be useful for development purposes when using a self-signed 
+ 'False' is not recommended but can be useful for development purposes when using a self-signed 
  certificate.
 
 ```bash
@@ -36,21 +35,20 @@ $ juju deploy rancher-integrator \
 # Elavate permisions in order for the charm to communicate with the Kubernetes API
 $ juju trust rancher-integrator --scope=cluster
 
-# Wait for the deployment to complete
+# Wait for the deployment to complete. The rancher-integrator unit should be in 'active idle' state and its message should inform you that the cluster is currently not registered.
 $ watch -n1 --color juju status --color
 
 # Execute the registration action
 $ juju run-action rancher-integrator/0 register
 ```
 
-Note: The register action takes an optional ```name``` parameter when a user defined cluster name within the Rancher platform is desired. If this
-parameter is not set, a randomly generated cluster name will be assigned and returned to the user.
+Note: The register action takes an optional ```name``` parameter when a user defined cluster name within the Rancher platform is desired. If this parameter is not set, a randomly generated cluster name will be assigned and returned to the user.
 
 ## Developing
 
 Create and activate a virtualenv with the development requirements:
 
-    virtualenv -p python3 venv
+    python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements-dev.txt
 

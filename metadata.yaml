@@ -13,6 +13,8 @@ description: |
   cluster hosting the charm within an existing Rancher container
   management platform.
 
+docs: https://discourse.charmhub.io/t/rancher-integrator-docs-index/4856
+
 containers:
   rancher-integrator:
     resource: rancher-integrator-image
