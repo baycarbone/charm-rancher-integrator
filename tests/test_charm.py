@@ -4,63 +4,67 @@
 # Learn more about testing at: https://juju.is/docs/sdk/testing
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import patch
 
-from charm import CharmRancherIntegratorCharm
-from ops.model import ActiveStatus
+from charm import RancherIntegratorCharm
+# from ops.model import ActiveStatus
 from ops.testing import Harness
 
 
 class TestCharm(unittest.TestCase):
-    def setUp(self):
-        self.harness = Harness(CharmRancherIntegratorCharm)
+
+    @patch('charm.Kubernetes')
+    def setUp(self, MockKubernetes):
+        self.harness = Harness(RancherIntegratorCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
 
-    def test_config_changed(self):
-        self.assertEqual(list(self.harness.charm._stored.things), [])
-        self.harness.update_config({"thing": "foo"})
-        self.assertEqual(list(self.harness.charm._stored.things), ["foo"])
+    def test_generate_rancher_integrator_layer(self):
+        self.harness.disable_hooks()
+        # Test with default config
+        self.assertEqual(self.harness.charm.config['url'], 'changeme')
+        self.assertEqual(self.harness.charm.config['bearer-token'], 'change:me')
+        self.assertEqual(self.harness.charm.config['cert-verify'], 'True')
+        self.assertEqual(self.harness.charm._stored.cluster_name, None)
 
-    def test_action(self):
-        # the harness doesn't (yet!) help much with actions themselves
-        action_event = Mock(params={"fail": ""})
-        self.harness.charm._on_fortune_action(action_event)
+        env = {
+            'RANCHER_INTEGRATOR_WAIT': 'True',
+            'RANCHER_INTEGRATOR_CERT_CHECK': 'True',
+            'RANCHER_INTEGRATOR_URL': 'changeme',
+            'RANCHER_INTEGRATOR_USERNAME': 'change',
+            'RANCHER_INTEGRATOR_PASSWORD': 'me'
+        }
 
-        self.assertTrue(action_event.set_results.called)
-
-    def test_action_fail(self):
-        action_event = Mock(params={"fail": "fail this"})
-        self.harness.charm._on_fortune_action(action_event)
-
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
-
-    def test_httpbin_pebble_ready(self):
-        # Check the initial Pebble plan is empty
-        initial_plan = self.harness.get_container_pebble_plan("httpbin")
-        self.assertEqual(initial_plan.to_yaml(), "{}\n")
-        # Expected plan after Pebble ready with default config
-        expected_plan = {
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {"thing": "🎁"},
+        expected = {
+            'summary': 'rancher-integrator layer',
+            'description': 'pebble config layer for rancher-integrator',
+            'services': {
+                'rancher-integrator': {
+                    'override': 'replace',
+                    'summary': 'rancher-integrator',
+                    'command': 'python3 ./rancher-integrator.py verify',
+                    'startup': 'enabled',
+                    'environment': env,
                 }
             },
         }
-        # Get the httpbin container from the model
-        container = self.harness.model.unit.get_container("httpbin")
-        # Emit the PebbleReadyEvent carrying the httpbin container
-        self.harness.charm.on.httpbin_pebble_ready.emit(container)
-        # Get the plan now we've run PebbleReady
-        updated_plan = self.harness.get_container_pebble_plan("httpbin").to_dict()
-        # Check we've got the plan we expected
-        self.assertEqual(expected_plan, updated_plan)
-        # Check the service was started
-        service = self.harness.model.unit.get_container("httpbin").get_service("httpbin")
-        self.assertTrue(service.is_running())
-        # Ensure we set an ActiveStatus with no message
-        self.assertEqual(self.harness.model.unit.status, ActiveStatus())
+        self.assertEqual(self.harness.charm._generate_rancher_integrator_layer('verify'), expected)
+
+        # Test format of bearer token
+        self.harness.update_config({'bearer-token': 'nocolon'})
+        expected['services']['rancher-integrator']['environment'].pop('RANCHER_INTEGRATOR_USERNAME')
+        expected['services']['rancher-integrator']['environment'].pop('RANCHER_INTEGRATOR_PASSWORD')
+        self.assertEqual(self.harness.charm._generate_rancher_integrator_layer('verify'), expected)
+
+        # Test disable cert-verify
+        self.harness.update_config({'cert-verify': 'False'})
+        expected['services']['rancher-integrator']['environment']['RANCHER_INTEGRATOR_CERT_CHECK'] = 'False'
+        self.assertEqual(self.harness.charm._generate_rancher_integrator_layer('verify'), expected)
+
+        # Test setting cluster name environment variable
+        self.harness.charm._stored.cluster_name = 'test_cluster'
+        (expected['services']
+                 ['rancher-integrator']
+                 ['environment']
+                 ['RANCHER_INTEGRATOR_CLUSTER_NAME']) = 'test_cluster'
+        self.assertEqual(self.harness.charm._generate_rancher_integrator_layer('verify'), expected)
