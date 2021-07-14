@@ -25,6 +25,7 @@ from kubernetes.client.exceptions import ApiException
 
 logger = logging.getLogger(__name__)
 
+
 class RancherIntegratorCharm(CharmBase):
     """Charm the service."""
 
@@ -48,8 +49,8 @@ class RancherIntegratorCharm(CharmBase):
 
         """
 
-        command = 'verify'
-        outcome = self._rancher_integrator_layer(command)
+        verify_layer = self._generate_rancher_integrator_layer('verify')
+        outcome = self._apply_rancher_integrator_layer(verify_layer)
 
         if outcome['status']:
             # All is well, set an ActiveStatus
@@ -85,8 +86,8 @@ class RancherIntegratorCharm(CharmBase):
             if not self._stored.cluster_name and 'name' in event.params:
                 self._stored.cluster_name = event.params['name']
             container = self.unit.get_container('rancher-integrator')
-            command = 'register'
-            outcome = self._rancher_integrator_layer(command)
+            register_layer = self._generate_rancher_integrator_layer('register')
+            outcome = self._apply_rancher_integrator_layer(register_layer)
 
             if outcome['status']:
                 event.log('Cluster successfuly registered, trying to fetch the import manifest...')
@@ -94,21 +95,23 @@ class RancherIntegratorCharm(CharmBase):
                 count = 0
                 while not found_manifest and count < 5:
                     try:
-                        import_manifest_contents = container.list_files('/usr/src/app/import_manifest/', pattern='*.yaml')
+                        import_manifest_contents = container.list_files('/usr/src/app/import_manifest/',
+                                                                        pattern='*.yaml')
                     except APIError as err:
                         event.fail('Unable to retrieve manifest file from rancher-integrator. Error: {}'.format(err))
-                        command = 'unregister'
-                        self._rancher_integrator_layer(command)
+                        unregister_layer = self._generate_rancher_integrator_layer('unregister')
+                        outcome = self._apply_rancher_integrator_layer(unregister_layer)
                         return
                     if len(import_manifest_contents) == 1:
                         try:
-                            #import_manifest = container.pull('/blabla/i.yaml').read()
+                            # import_manifest = container.pull('/blabla/i.yaml').read()
                             import_manifest = container.pull(import_manifest_contents[0].path).read()
                             self._stored.cluster_name = import_manifest_contents[0].name.split('.yaml')[0]
                         except PathError as err:
-                            event.fail('Unable to retrieve manifest file from rancher-integrator. Error: {}'.format(err))
-                            command = 'unregister'
-                            self._rancher_integrator_layer(command)
+                            event.fail('Unable to retrieve manifest file from rancher-integrator. Error: {}'
+                                       .format(err))
+                            unregister_layer = self._generate_rancher_integrator_layer('unregister')
+                            outcome = self._apply_rancher_integrator_layer(unregister_layer)
                             return
                         found_manifest = True
                     else:
@@ -124,27 +127,27 @@ class RancherIntegratorCharm(CharmBase):
                     except ApiException as err:
                         if err.status == 403:
                             event.fail(
-                                'Insufficient permissions to apply import manifest. Try: `juju trust {} --scope=cluster`'.format(
-                                self.app.name
-                                )
+                                'Insufficient permissions to apply import manifest. '
+                                'Try: `juju trust {} --scope=cluster`'
+                                .format(self.app.name)
                             )
                         else:
                             event.fail('Unable to apply import manifest. ApiException: {}'.format(err))
-                        command = 'unregister'
-                        self._rancher_integrator_layer(command)
+                        unregister_layer = self._generate_rancher_integrator_layer('unregister')
+                        outcome = self._apply_rancher_integrator_layer(unregister_layer)
                         return
 
                     event.log('Successully applied import manifest.')
                     event.set_results({
                         'result': 'Cluster registered.',
                         'name': self._stored.cluster_name
-                        })
+                    })
                     self._stored.registered = True
                     self.unit.status = ActiveStatus('Registered cluster: {}'.format(self._stored.cluster_name))
                 else:
                     event.fail('Unable to retrieve manifest file from rancher-integrator. Max tries exceeded.')
-                    command = 'unregister'
-                    self._rancher_integrator_layer(command)
+                    unregister_layer = self._generate_rancher_integrator_layer('unregister')
+                    outcome = self._apply_rancher_integrator_layer(unregister_layer)
                     return
             else:
                 message = outcome['reason'].split('Err -')
@@ -153,9 +156,10 @@ class RancherIntegratorCharm(CharmBase):
 
         else:
             event.set_results({
-                'result': 'Cluster already registered. Please unregister {} before trying again.'.format(self._stored.cluster_name),
+                'result': 'Cluster already registered. Please unregister {} before trying again.'
+                          .format(self._stored.cluster_name),
                 'name': self._stored.cluster_name
-                })
+            })
 
     def _on_unregister_action(self, event):
         """Register the Kubernetes cluster in a Rancher platform.
@@ -165,19 +169,20 @@ class RancherIntegratorCharm(CharmBase):
 
         """
 
-        command = 'unregister'
-        outcome = self._rancher_integrator_layer(command)
+        unregister_layer = self._generate_rancher_integrator_layer('unregister')
+        outcome = self._apply_rancher_integrator_layer(unregister_layer)
 
         if outcome['status']:
             event.log('Successully unregistered cluster from rancher platform.')
             if self._stored.manifest is not None:
+                # add try
                 self.kubernetes.delete(self._stored.manifest)
                 event.log('Successully removed import manifest.')
                 self._stored.manifest = None
             event.set_results({
                 'result': 'Unregistered cluster successfully',
                 'name': self._stored.cluster_name
-                })
+            })
             self._stored.cluster_name = None
             self._stored.registered = False
             # All is well, set an ActiveStatus
@@ -188,18 +193,14 @@ class RancherIntegratorCharm(CharmBase):
             self.unit.status = BlockedStatus(message[0])
             event.fail(message='Unable to unregister cluster. Error: {}'.format(message[0]))
 
-    def _rancher_integrator_layer(self, command):
+    def _generate_rancher_integrator_layer(self, command):
         """Returns a Pebble configration layer for rancher-integrator"""
-
-        # Get the rancher-integrator container so we can configure/manipulate it
-        container = self.unit.get_container('rancher-integrator')
 
         # Set env dictionary based on config options
         env = {
             'RANCHER_INTEGRATOR_WAIT': 'True',
             'RANCHER_INTEGRATOR_CERT_CHECK': self.config['cert-verify']
-            }
-
+        }
         if 'url' in self.config:
             env['RANCHER_INTEGRATOR_URL'] = self.config['url']
         if 'bearer-token' in self.config:
@@ -210,34 +211,29 @@ class RancherIntegratorCharm(CharmBase):
         if self._stored.cluster_name:
             env['RANCHER_INTEGRATOR_CLUSTER_NAME'] = self._stored.cluster_name
         # Create a new config layer
-        layer = {
-            "summary": "rancher-integrator layer",
-            "description": "pebble config layer for rancher-integrator",
-            "services": {
-                "rancher-integrator": {
-                    "override": "replace",
-                    "summary": "rancher-integrator",
-                    "command": 'python3 ./rancher-integrator.py ' + command,
-                    "startup": "enabled",
-                    "environment": env,
+        return {
+            'summary': 'rancher-integrator layer',
+            'description': 'pebble config layer for rancher-integrator',
+            'services': {
+                'rancher-integrator': {
+                    'override': 'replace',
+                    'summary': 'rancher-integrator',
+                    'command': 'python3 ./rancher-integrator.py ' + command,
+                    'startup': 'enabled',
+                    'environment': env,
                 }
             },
         }
 
-        try:
-            # Get the current config
-            services = container.get_plan().to_dict().get("services", {})
-        except ConnectionError:
-            # Since this is a config-changed handler and that hook can execute
-            # before pebble is ready, we may get a connection error here. Let's
-            # defer the event, meaning it will be retried the next time any
-            # hook is executed. We don't have an explicit handler for
-            # `self.on.gosherve_pebble_ready` but this method will be rerun
-            # when that condition is met (because of `event.defer()`), and so
-            # the `get_container` call will succeed and we'll continue to the
-            # subsequent steps.
-            event.defer()
-            return {'status': True}
+    def _apply_rancher_integrator_layer(self, layer):
+        """Applies a Pebble configration layer for rancher-integrator"""
+
+        # Get the rancher-integrator container so we can configure/manipulate it
+        container = self.unit.get_container('rancher-integrator')
+
+        # Get the current config
+        services = container.get_plan().to_dict().get("services", {})
+
         # Check if there are any changes to services
         if services != layer["services"]:
             # Changes were made, add the new layer
@@ -256,6 +252,7 @@ class RancherIntegratorCharm(CharmBase):
                 return {'status': False, 'reason': error_log}
 
         return {'status': True}
+
 
 if __name__ == "__main__":
     main(RancherIntegratorCharm)
