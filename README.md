@@ -19,6 +19,9 @@ Bugs / Issues: https://github.com/baycarbone/charm-rancher-integrator/issues
 More information regarding the rancher-interator application can be found at 
 [rancher-integrator repository](https://github.com/baycarbone/rancher-integrator).
 
+More information about the cluster registration process can be found at:  
+https://rancher.com/docs/rancher/v2.5/en/cluster-provisioning/registered-clusters/
+
 ## Quickstart
 
 Assuming you have juju installed and bootstrapped on a Kubernetes cluster, deploy the charm and 
@@ -74,24 +77,33 @@ To set up a local test environment with [MicroK8s](https://microk8s.io):
 ```bash
 # Install MicroK8s
 $ sudo snap install --classic microk8s
+
 # Wait for MicroK8s to be ready
 $ sudo microk8s status --wait-ready
+
 # Enable features required by Juju controller & charm
 $ sudo microk8s enable storage dns ingress rbac
+
 # (Optional) Alias kubectl bundled with MicroK8s package
 $ sudo snap alias microk8s.kubectl kubectl
+
 # (Optional) Add current user to 'microk8s' group
 # This avoid needing to use 'sudo' with the 'microk8s' command
 $ sudo usermod -aG microk8s $(whoami)
+
 # Activate the new group (in the current shell only)
 # Log out and log back in to make the change system-wide
 $ newgrp microk8s
+
 # Install Charmcraft
 $ sudo snap install charmcraft
+
 # Install juju
 $ sudo snap install --classic juju
+
 # Bootstrap the Juju controller on MicroK8s
 $ juju bootstrap microk8s micro
+
 # Add a new model to Juju
 $ juju add-model development
 ```
@@ -125,27 +137,22 @@ $ juju run rancher-integrator/0 register --format=yaml
 $ juju run rancher-integrator/0 unregister --format=yaml
 $ juju run rancher-integrator/0 register name=<name> --format=yaml
 ```
-### Config options
-- url: url of the existing Rancher platform against which registration will be performed.
-
-- bearer-token: bearer-token needed to access the Rancher api. For more information on retrieving
-such a token, please see [rancher-api-keys](https://rancher.com/docs/rancher/v2.5/en/user-settings/api-keys/).
-
-- (optional) cert-verify: toggles verification of the Rancher platform certificate. Setting this to
- 'False' is not recommended but can be useful for development purposes when using a self-signed 
- certificate.
 
 ## Testing
 
 ```bash
 # Clone the charm code
 $ git clone https://github.com/baycarbone/charm-rancher-integrator && cd charm-rancher-integrator
+
 # Create a virtual environemnt for the charm code
 $ python3 -m venv venv
+
 # Activate the venv
 $ source ./venv/bin/activate
+
 # Install dependencies
 $ pip install -r requirements-dev.txt
+
 # Run the tests
 $ ./run_tests
 ```
