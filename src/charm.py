@@ -93,7 +93,7 @@ class RancherIntegratorCharm(CharmBase):
                 event.log('Cluster successfuly registered, trying to fetch the import manifest...')
                 found_manifest = False
                 count = 0
-                while not found_manifest and count < 5:
+                while not found_manifest and count < 15:
                     try:
                         import_manifest_contents = container.list_files('/usr/src/app/import_manifest/',
                                                                         pattern='*.yaml')
